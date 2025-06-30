@@ -48,6 +48,7 @@ saveRDS(all_target_gene_names, "./app/data/target_gene_names.RDS")
 
 plot_iclip_coverage_wrap(gene = "mamo")
 
+## Individual RDS files
 all_target_gene_names %>%
   purrr::set_names() %>%
   iwalk(~{
@@ -59,6 +60,26 @@ all_target_gene_names %>%
         ".RDS"
       ))
   }, .progress = TRUE) 
+
+## Combined RDS files 
+all_target_grob <- all_target_gene_names %>%
+  purrr::set_names() %>%
+  imap(~{
+    plot_iclip_coverage_wrap(gene = .x) %>%
+      patchworkGrob()
+  }, .progress = TRUE) 
+
+saveRDS(all_target_grob, "./app/data/plots/all_target_grob.RDS")
+
+## Individual png files
+## ** SCRAP this plan - too big file size
+all_target_gene_names[[100]] %>%
+  purrr::set_names() %>%
+  iwalk(~{
+    plot <- plot_iclip_coverage_wrap(gene = .x)
+    ggsave(filename = paste0("./app/data/plots/", .y, ".png"),
+           height = 6, width = 8, dpi = 200)
+  })
 
 # ==============================================================================
 # 3. Binding site table

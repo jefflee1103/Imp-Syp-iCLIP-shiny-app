@@ -8,8 +8,8 @@
 # Description:
 # This Shiny application provides an interactive platform to explore the datasets
 # associated with the "Imp Syp iCLIP" Sci Adv publication. It includes an
-# introduction to the study, a searchable table of the full dataset, and a link
-# to an interactive UCSC Genome Browser session for the iCLIP tracks.
+# introduction to the study, a searchable table of the full dataset, and a
+# tool to explore specific gene binding sites.
 #
 #
 # --- DIRECTORY STRUCTURE (for shinylive) ---
@@ -18,6 +18,9 @@
 # |-- app.R         (this file)
 # |-- data/
 # |   |-- full_data.rds
+# |   |-- target_gene_names.RDS
+# |   |-- plots/
+# |   |   |-- all_target_grob.RDS  (Contains a named list of all plot grobs)
 # |
 # |-- www/
 # |   |-- science_advances_logo.png
@@ -33,6 +36,8 @@
 library(shiny)
 library(DT)
 library(dplyr)
+library(ggplot2)
+library(grid)
 
 # 2. LOAD DATA
 # ------------------------------------------------------------------------------
@@ -50,6 +55,23 @@ full_data <- tryCatch({
     notes = c("Note 1", "Note 2", "Note 3"),
     stringsAsFactors = FALSE
   )
+})
+
+# Load the character vector of gene names for the dropdown menu.
+# This is more efficient for shinylive than scanning a directory.
+gene_choices <- tryCatch({
+  readRDS("data/target_gene_names.RDS")
+}, error = function(e) {
+  # Create a placeholder vector if the file is missing
+  c("pros", "GeneB", "GeneC")
+})
+
+# Load the single RDS file containing all plot grobs as a named list
+all_plots <- tryCatch({
+  readRDS("data/plots/all_target_grob.RDS")
+}, error = function(e) {
+  # Create a placeholder list if the file is missing
+  list()
 })
 
 
@@ -204,20 +226,33 @@ ui <- navbarPage(
                           tags$br()
                  ),
                  
-                 # Tab 3: UCSC Genome Browser View
+                 # Tab 3: Explore Binding Sites
                  tabPanel("Explore Imp/Syp binding sites",
-                          h3("Imp/Syp iCLIP tracks on UCSC Genome Browser"),
-                          p("Due to security policies of the UCSC Genome Browser, direct embedding is not permitted. Please click the button below to open the interactive session in a new browser tab."),
-                          hr(),
-                          div(style = "text-align: center; margin-top: 50px;",
-                              tags$a(
-                                href = "https://genome-euro.ucsc.edu/cgi-bin/hgTracks?hgS_doOtherUser=submit&hgS_otherUserName=jefflee1103&hgS_otherUserSessionName=Imp%20Syp%20iCLIP%20DOI%3A%2010.1126%2Fsciadv.adr6682",
-                                target = "_blank",
-                                class = "btn btn-primary btn-lg",
-                                icon("external-link-alt"),
-                                "Open UCSC Genome Browser Session"
-                              )
+                          h3("Visualise Binding Sites for a Specific Gene"),
+                          p("Select a gene from the dropdown menu (or type to search) and click 'Search' to visualise the binding profile of Imp/Syp."),
+                          
+                          fluidRow(
+                            column(4, 
+                                   selectizeInput("gene_search_input", 
+                                                  "Select or type a Gene Symbol:", 
+                                                  choices = gene_choices,
+                                                  selected = "chinmo"
+                                   )
+                            ),
+                            column(2, 
+                                   actionButton("search_button", "Search", icon = icon("search"), style="margin-top: 25px;")
+                            )
                           ),
+                          
+                          hr(),
+                          
+                          # Title for the plot, dynamically updated
+                          h4(textOutput("plot_title")),
+                          
+                          # The plot output area
+                          plotOutput("gene_plot", height = "800px"),
+                          
+                          # Add some space at the bottom for aesthetics
                           tags$br(),
                           tags$br()
                  )
@@ -257,7 +292,37 @@ server <- function(input, output, session) {
     }
   )
   
-  # --- Server logic for Tab 3 is no longer needed as it's a direct link ---
+  # --- Server logic for Tab 3: Gene-specific Exploration ---
+  
+  selected_gene <- eventReactive(input$search_button, {
+    # Ensure input is not empty before allowing the event to fire
+    if (input$gene_search_input == "") {
+      return(NULL)
+    }
+    input$gene_search_input
+  }, ignoreNULL = FALSE) # ignoreNULL=FALSE ensures the initial value is used on app start if user clicks search
+  
+  output$plot_title <- renderText({
+    req(selected_gene())
+    paste("iCLIP binding sites of Imp/Syp on", selected_gene(), "transcript.")
+  })
+  
+  # Render the plot on-demand based on the selected gene
+  output$gene_plot <- renderPlot({
+    gene_name <- selected_gene()
+    req(gene_name) # require a gene name to be selected
+    
+    # Validate that the selected gene is available in our plots list
+    validate(
+      need(gene_name %in% names(all_plots), "Plot not available. Please select a valid gene from the list and click 'Search'.")
+    )
+    
+    # Retrieve the grob from the pre-loaded list
+    grob_to_plot <- all_plots[[gene_name]]
+    
+    # Draw the grob
+    grid::grid.draw(grob_to_plot)
+  })
   
 }
 
