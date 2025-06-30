@@ -14,8 +14,6 @@ The application provides a user-friendly interface to browse the complete iCLIP 
 
 [**>> Launch Imp/Syp iCLIP Data Explorer <<**](https://jefflee1103.github.io/Imp-Syp-iCLIP-shiny-app/)
 
-*(Note: Please replace the placeholder URL above with the actual link to your deployed application on GitHub Pages or another hosting service.)*
-
 ---
 
 ## How to Use the Web App
@@ -48,7 +46,8 @@ Jeffrey Y. Lee et al. ,Imp/IGF2BP and Syp/SYNCRIP temporal RNA interactomes unco
 
 ## Source data
 
-Source data (including track bigWig/Bed files) used for the publication is available from [https://github.com/jefflee1103/Lee2024_Imp-Syp-iCLIP](https://github.com/jefflee1103/Lee2024_Imp-Syp-iCLIP). 
+Source data (including track bigWig/Bed files) used for the publication is available from [https://github.com/jefflee1103/Lee2024_Imp-Syp-iCLIP](https://github.com/jefflee1103/Lee2024_Imp-Syp-iCLIP).  
+
 Raw and processed FASTQ files are available from Gene Expression Omnibus (GEO) [GSE262499](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE262499).
 
 
